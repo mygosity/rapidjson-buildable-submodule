@@ -74,12 +74,20 @@ matrix:
             - doxygen
 
 before_script:
-    - ccache -s
-      #   hack to avoid Valgrind bug (https://bugs.kde.org/show_bug.cgi?id=326469),
-      #   exposed by merging PR#163 (using -march=native)
-      #   TODO: Since this bug is already fixed. Remove this when valgrind can be upgraded.
-    - sed -i "s/-march=native//" CMakeLists.txt
-    - mkdir build
+    # travis provides clang-7 for amd64 and clang-3.8 for arm64
+    # here use clang-8 to all architectures as clang-7 is not available for arm64
+  - if [ -f /usr/bin/clang++-8 ]; then
+      sudo update-alternatives --install /usr/bin/clang++ clang++ /usr/bin/clang++-8 1000;
+      sudo update-alternatives --config clang++;
+      export PATH=/usr/bin:$PATH;
+    fi
+  - if [ "$CXX" = "clang++" ]; then export CCACHE_CPP2=yes; fi
+  - ccache -s
+    #   hack to avoid Valgrind bug (https://bugs.kde.org/show_bug.cgi?id=326469),
+    #   exposed by merging PR#163 (using -march=native)
+    #   TODO: Since this bug is already fixed. Remove this when valgrind can be upgraded.
+  #- sed -i "s/-march=native//" CMakeLists.txt
+  - mkdir build
 
 script:
   - if [ "$CXX" = "clang++" ]; then export CXXFLAGS="-stdlib=libc++ ${CXXFLAGS}"; fi
